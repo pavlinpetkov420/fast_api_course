@@ -6,6 +6,7 @@ from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+import sql.queries as queries
 
 app: FastAPI = FastAPI()
 
@@ -62,15 +63,22 @@ def get_posts():
 
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_post(post: Post):
-    post_dict = post.dict()
-    post_dict['id'] = randrange(0, 1000000000)
-    my_posts.append(post_dict)
-    return {"data": post_dict}
+    # Format table and columns
+    formatted_query: str = queries.INSERT_INTO_RETURNING_STAR.format(table="posts", column_names="title, content, published")
+    # Execute insert statement
+    cursor.execute(formatted_query, (post.title, post.content, post.published))
+    connection.commit()
+    # Return data
+    new_post = cursor.fetchone()
+    return {"data": new_post}
 
 
 @app.get("/posts/id={post_id}")
 def get_post(post_id: int):
-    post: Union[dict, None] = filter_post_by_id(post_id)
+    formatted_query: str = queries.FILTER_POST_BY_ID.format(table="fast_api.public.posts")
+    cursor.execute(formatted_query, (str(post_id)))
+    post = cursor.fetchall()
+    # post: Union[dict, None] = filter_post_by_id(post_id)
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"There is no post with id {post_id}! Please provide other id!")
@@ -79,24 +87,27 @@ def get_post(post_id: int):
 
 @app.delete("/posts/id={post_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(post_id: int):
-    index: Union[int, None] = find_post(post_id)
-    if index is None:
+    formatted_query: str = queries.DELETE_POST_BY_ID.format(table="fast_api.public.posts")
+    cursor.execute(formatted_query, (str(post_id)))
+    deleted_post = cursor.fetchone()
+    connection.commit()
+    if deleted_post is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"There is no post with id {post_id}! Please provide other id!")
-    my_posts.pop(index)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.put("/posts/id={post_id}")
 def update_post(post_id: int, post: Post):
-    index: int = find_post(post_id)
+    formatted_query: str = queries.UPDATE_POST_BY_ID.format(table="fast_api.public.posts", column="id")
+    cursor.execute(formatted_query, (post.title, post.content, post.published, str(post_id)))
 
-    if index is None:
+    updated_post = cursor.fetchone()
+    connection.commit()
+    if updated_post is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"There is no post with id {post_id}! Please provide other id!")
-    post_dict: dict = post.dict()
-    post_dict['id'] = post_id
-    my_posts[index] = post_dict
-    return {"data": post_dict}
+
+    return {"data": updated_post}
 
 
