@@ -1,12 +1,18 @@
 from typing import Optional, Union
 
-from fastapi import FastAPI, Response, status, HTTPException
+from fastapi import FastAPI, Response, status, HTTPException, Depends
 from pydantic import BaseModel
 from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from sqlalchemy.orm import Session
 
 import sql.queries as queries
+from .models import Base, Posts
+from .database import engine, get_db
+
+
+Base.metadata.create_all(bind=engine)
 
 app: FastAPI = FastAPI()
 
@@ -41,6 +47,7 @@ def find_post(post_id: int):
     for i, p in enumerate(my_posts):
         if p['id'] == post_id:
             return i
+
 
 """
 @app decorator - tells FastAPI that the function right below is in charge of handling requests that go to: 
@@ -111,3 +118,8 @@ def update_post(post_id: int, post: Post):
     return {"data": updated_post}
 
 
+@app.get("/sqlalchemy")
+def test_posts(db: Session = Depends(get_db)):
+    posts = db.query(Posts).all()
+    return {"status": "success",
+            "data": posts}
