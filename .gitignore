@@ -3,3 +3,4 @@ __pycache__
 app/__pycache__
 Video_Progress.txt
 env
+postgreadmin_sql/
