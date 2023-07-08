@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 import app.models as models
 from app.database import get_db
-from app.schemas import PostResponse, CreatePost
+from app.schemas import PostResponse, CreatePost, UserResponse
 from app.oauth2 import get_current_user
 
 
@@ -42,13 +42,13 @@ Start the App Server: uvicorn main:app [--reload - this flag is used when you sa
 
 
 @router.get("/", response_model=List[PostResponse])
-def get_posts(db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+def get_posts(db: Session = Depends(get_db), user: UserResponse = Depends(get_current_user)):
     all_posts = db.query(models.Posts).all()
     return all_posts
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=PostResponse)
-def create_post(post: CreatePost, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+def create_post(post: CreatePost, db: Session = Depends(get_db), user: UserResponse = Depends(get_current_user)):
     # # Format table and columns
     # formatted_query: str = queries.INSERT_INTO_RETURNING_STAR.format(table="posts", column_names="title, content, published")
     # # Execute insert statement
@@ -57,7 +57,7 @@ def create_post(post: CreatePost, db: Session = Depends(get_db), user_id: int = 
     # new_post = cursor.fetchone()
 
     # Same functionality with ORM
-    new_post = models.Posts(**post.__dict__)
+    new_post = models.Posts(owner_id=user.id, **post.__dict__)
     # Add the new post to table
     db.add(new_post)
     db.commit()
@@ -68,7 +68,7 @@ def create_post(post: CreatePost, db: Session = Depends(get_db), user_id: int = 
 
 
 @router.get("/id={post_id}", response_model=PostResponse)
-def get_post(post_id: int, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+def get_post(post_id: int, db: Session = Depends(get_db), user: UserResponse = Depends(get_current_user)):
     # formatted_query: str = queries.FILTER_POST_BY_ID.format(table="fast_api.public.posts")
     # cursor.execute(formatted_query, (str(post_id)))
     # post = cursor.fetchall()
@@ -80,29 +80,37 @@ def get_post(post_id: int, db: Session = Depends(get_db), user_id: int = Depends
     if not filtered_post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"There is no post with id {post_id}! Please provide other id!")
+
     return filtered_post
 
 
 @router.delete("/id={post_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(post_id: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+def delete_post(post_id: int, db: Session = Depends(get_db), user: UserResponse = Depends(get_current_user)):
     # formatted_query: str = queries.DELETE_POST_BY_ID.format(table="fast_api.public.posts")
     # cursor.execute(formatted_query, (str(post_id)))
     # deleted_post = cursor.fetchone()
     # connection.commit()
 
     # delete operation with ORM
-    deleted_post = db.query(models.Posts).filter(models.Posts.id == post_id)
+    filtered_post_query = db.query(models.Posts).filter(models.Posts.id == post_id)
+    post = filtered_post_query.first()
 
-    if deleted_post is None:
+    if post is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"There is no post with id {post_id}! Please provide other id!")
-    deleted_post.delete(synchronize_session=False)
+
+    if post.owner_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Not authorized to perform requested action!")
+
+    filtered_post_query.delete(synchronize_session=False)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT, description=f'Post with id {post_id} has been deleted!')
 
 
 @router.put("/id={post_id}", response_model=PostResponse)
-def update_post(post_id: int, updated_post: CreatePost, db: Session = Depends(get_db), user_id: int = Depends(get_current_user)):
+def update_post(post_id: int, updated_post: CreatePost, db: Session = Depends(get_db),
+                user: UserResponse = Depends(get_current_user)):
     # formatted_query: str = queries.UPDATE_POST_BY_ID.format(table="fast_api.public.posts", column="id")
     # cursor.execute(formatted_query, (post.title, post.content, post.published, str(post_id)))
     #
@@ -110,14 +118,20 @@ def update_post(post_id: int, updated_post: CreatePost, db: Session = Depends(ge
     # connection.commit()
     #UPDATE post with ORM
 
-    filtered_post = db.query(models.Posts).filter(models.Posts.id == post_id)
+    filtered_post_query = db.query(models.Posts).filter(models.Posts.id == post_id)
+    post = filtered_post_query.first()
 
-    if filtered_post is None:
+    if post is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"There is no post with id {post_id}! Please provide other id!")
+
+    if post.owner_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Not authorized to perform requested action!")
+
     # Returns updated records count
-    filtered_post.update(updated_post.__dict__, synchronize_session=False)
+    filtered_post_query.update(updated_post.__dict__, synchronize_session=False)
     db.commit()
 
-    return filtered_post.first()
+    return filtered_post_query.first()
 

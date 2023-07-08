@@ -19,6 +19,7 @@ class CreatePost(PostBase):
 class PostResponse(PostBase):
     id: int
     create_at: datetime  # this needs to be created_at
+    owner_id: int
 
     class Config:
         orm_mode = True
