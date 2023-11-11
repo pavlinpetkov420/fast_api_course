@@ -2,8 +2,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from .config import settings
+
 # template: <driver_type>://<username>:<password>:<ip_adress/hostname>/<database_name>
-SQL_ALCHEMY_DB_URL: str = "postgresql+psycopg2://postgres:J0Gj_cLZTaCH0FqweV^O1A@localhost:5432/fast_api"
+SQL_ALCHEMY_DB_URL: str = f"postgresql+psycopg2://{settings.database_username}:{settings.database_password}" \
+                          f"@{settings.database_hostname}:{settings.database_port}/{settings.database_name}"
 
 engine = create_engine(SQL_ALCHEMY_DB_URL)
 
