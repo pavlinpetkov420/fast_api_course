@@ -12,24 +12,6 @@ class PostBase(BaseModel):
     published: bool = True
 
 
-class CreatePost(PostBase):
-    pass
-
-
-class PostResponse(PostBase):
-    id: int
-    create_at: datetime  # this needs to be created_at
-    owner_id: int
-
-    class Config:
-        orm_mode = True
-
-
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
-
-
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
@@ -40,6 +22,25 @@ class UserResponse(BaseModel):
 
 
 class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class CreatePost(PostBase):
+    pass
+
+
+class PostResponse(PostBase):
+    id: int
+    create_at: datetime  # this needs to be created_at
+    owner_id: int
+    owner: UserResponse
+
+    class Config:
+        orm_mode = True
+
+
+class UserCreate(BaseModel):
     email: EmailStr
     password: str
 
