@@ -1,5 +1,6 @@
 # Every model represents a table in database
 from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
 
 from .database import Base
@@ -15,6 +16,7 @@ class Posts(Base):
     published = Column(Boolean, nullable=False, server_default="TRUE")
     create_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    owner = relationship("User") # Helps us to provide information about user who created a post
 
 
 class User(Base):

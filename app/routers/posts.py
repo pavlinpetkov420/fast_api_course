@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import status, HTTPException, Depends, APIRouter
 from fastapi.openapi.models import Response
@@ -42,8 +42,23 @@ Start the App Server: uvicorn main:app [--reload - this flag is used when you sa
 
 
 @router.get("/", response_model=List[PostResponse])
-def get_posts(db: Session = Depends(get_db), user: UserResponse = Depends(get_current_user)):
-    all_posts = db.query(models.Posts).all()
+def get_posts(
+        db: Session = Depends(get_db),
+        user: UserResponse = Depends(get_current_user),
+        limit: int = 10,
+        skip: int = 0,
+        search: Optional[str] = ''
+):
+    """
+        db: Session = connected session
+        user: UserResponse = current user
+        limit: int = limit how many posts to return, default = 10
+        skip: int = skip first X posts, default = 0
+        search: Optional[str] = Add keywords to filter posts
+
+        Note for Postman: space between keywords for search is %20
+    """
+    all_posts = db.query(models.Posts).filter(models.Posts.title.contains(search)).limit(limit).offset(skip).all()
     return all_posts
 
 
