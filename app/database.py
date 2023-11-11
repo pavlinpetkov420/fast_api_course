@@ -23,3 +23,13 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# This block was used before ORM
+# while True:
+#     try:
+#         connection = psycopg2.connect(host='localhost', database='fast_api', user='postgres',
+#                                       password='J0Gj_cLZTaCH0FqweV^O1A', cursor_factory=RealDictCursor)
+#         cursor = connection.cursor()
+#         print("Database connection was successful!")
+#     except Exception as ex:
+#         raise Exception(ex)
