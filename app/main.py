@@ -1,8 +1,10 @@
 from fastapi import FastAPI
+from pydantic import BaseSettings
+
 import app.models as models
 from .database import engine
 from .routers import posts, users, auth
-
+from .config import settings
 
 ########################################################################################################################
 # TODO: 1.Go over the code in the project and add documentation
