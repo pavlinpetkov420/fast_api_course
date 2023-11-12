@@ -1,7 +1,9 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Annotated
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
+from pydantic.dataclasses import ConfigDict
+
 
 # Use pydantic.BaseModel to specify what data structure and type we expect (schema declaration)
 
@@ -40,6 +42,11 @@ class PostResponse(PostBase):
         orm_mode = True
 
 
+class PostResponseVote(BaseModel):
+    Post: PostResponse
+    votes: int
+
+
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
@@ -52,3 +59,9 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     id: Optional[str] = None
+
+
+class Vote(BaseModel):
+    post_id: int
+    dir: Annotated[int, Field(strict=True, ge=0, le=1)]
+

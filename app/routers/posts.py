@@ -2,11 +2,12 @@ from typing import List, Optional
 
 from fastapi import status, HTTPException, Depends, APIRouter
 from fastapi.openapi.models import Response
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 import app.models as models
 from app.database import get_db
-from app.schemas import PostResponse, CreatePost, UserResponse
+from app.schemas import PostResponse, CreatePost, UserResponse, PostResponseVote
 from app.oauth2 import get_current_user
 
 
@@ -14,23 +15,6 @@ router = APIRouter(
     prefix='/posts'
     , tags=['Posts']
 )
-
-
-my_posts: list = [{'title': 'Top beaches in Florida', 'content': 'Checkout those top beaches in Florida!', 'published': True, 'rating': 2, 'id': 314}
-                  , {'title': 'old_title', 'content': 'Content', 'published': True, 'rating': 3, 'id': 315}]
-
-
-def filter_post_by_id(post_id: int):
-    for post in my_posts:
-        if post['id'] == post_id:
-            return post
-
-
-def find_post(post_id: int):
-    for i, p in enumerate(my_posts):
-        if p['id'] == post_id:
-            return i
-
 
 """
 @app decorator - tells FastAPI that the function right below is in charge of handling requests that go to: 
@@ -41,14 +25,16 @@ Start the App Server: uvicorn main:app [--reload - this flag is used when you sa
 """
 
 
-@router.get("/", response_model=List[PostResponse])
+# @router.get("/", response_model=List[PostResponse])
+# @router.get("/")
+@router.get("/", response_model=None)
 def get_posts(
         db: Session = Depends(get_db),
         user: UserResponse = Depends(get_current_user),
         limit: int = 10,
         skip: int = 0,
         search: Optional[str] = ''
-):
+) -> List[PostResponseVote]:
     """
         db: Session = connected session
         user: UserResponse = current user
@@ -58,9 +44,14 @@ def get_posts(
 
         Note for Postman: space between keywords for search is %20
     """
-    all_posts = db.query(models.Posts).filter(models.Posts.title.contains(search)).limit(limit).offset(skip).all()
-    return all_posts
+    # all_posts = db.query(models.Posts).filter(models.Posts.title.contains(search)).limit(limit).offset(skip).all()
+    # return all_posts
 
+    votes_result = db.query(models.Posts, func.count(models.Votes.post_id).label("Votes"))\
+        .join(models.Votes, models.Votes.post_id == models.Posts.id, isouter=True)\
+        .group_by(models.Posts.id).filter(models.Posts.title.contains(search)).limit(limit).offset(skip).all()
+    votes_result = list(map(lambda x: x._mapping, votes_result))
+    return votes_result
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=PostResponse)
 def create_post(post: CreatePost, db: Session = Depends(get_db), user: UserResponse = Depends(get_current_user)):
