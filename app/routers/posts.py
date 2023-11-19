@@ -50,8 +50,9 @@ def get_posts(
     votes_result = db.query(models.Posts, func.count(models.Votes.post_id).label("Votes"))\
         .join(models.Votes, models.Votes.post_id == models.Posts.id, isouter=True)\
         .group_by(models.Posts.id).filter(models.Posts.title.contains(search)).limit(limit).offset(skip).all()
-    votes_result = list(map(lambda x: x._mapping, votes_result))
+    votes_result = list(map(lambda x: x._mapping, votes_result)) # TODO: ADD comment why we need this operation before return result
     return votes_result
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=PostResponse)
 def create_post(post: CreatePost, db: Session = Depends(get_db), user: UserResponse = Depends(get_current_user)):

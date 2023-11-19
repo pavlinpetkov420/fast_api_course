@@ -17,7 +17,7 @@ class PostBase(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
-    create_at: datetime
+    created_at: datetime
 
     class Config:
         orm_mode = True
@@ -34,7 +34,7 @@ class CreatePost(PostBase):
 
 class PostResponse(PostBase):
     id: int
-    create_at: datetime  # this needs to be created_at
+    created_at: datetime  # this needs to be created_at
     owner_id: int
     owner: UserResponse
 
