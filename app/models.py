@@ -14,7 +14,7 @@ class Posts(Base):
     title = Column(String, nullable=False)
     content = Column(String, nullable=False)
     published = Column(Boolean, nullable=False, server_default="TRUE")
-    create_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     owner = relationship("User") # Helps us to provide information about user who created a post
 
@@ -25,7 +25,7 @@ class User(Base):
     id = Column(Integer, nullable=False, primary_key=True)
     email = Column(String, nullable=False, unique=True)
     password = Column(String, nullable=False)
-    create_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
 
 
 class Votes(Base):

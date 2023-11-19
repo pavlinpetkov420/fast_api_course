@@ -10,7 +10,8 @@ from .config import settings
 # TODO: 1.Go over the code in the project and add documentation
 
 ########################################################################################################################
-models.Base.metadata.create_all(bind=engine)
+# Command commented out because of alembic
+# models.Base.metadata.create_all(bind=engine)
 
 app: FastAPI = FastAPI()
 
